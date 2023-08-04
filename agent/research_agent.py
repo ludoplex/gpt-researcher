@@ -73,13 +73,12 @@ class ResearchAgent:
             "role": "user",
             "content": action,
         }]
-        answer = create_chat_completion(
+        return create_chat_completion(
             model=CFG.smart_llm_model,
             messages=messages,
             stream=stream,
             websocket=websocket,
         )
-        return answer
 
     async def create_search_queries(self):
         """ Creates the search queries for the given question.
@@ -105,10 +104,7 @@ class ResearchAgent:
         # Create a list to hold the coroutine objects
         tasks = [async_browse(url, query, self.websocket) for url in await new_search_urls]
 
-        # Gather the results as they become available
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-
-        return responses
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
     async def run_search_summary(self, query):
         """ Runs the search summary for the given query.

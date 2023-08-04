@@ -45,10 +45,9 @@ def create_chat_completion(
     # create response
     for attempt in range(10):  # maximum of 10 attempts
         try:
-            response = send_chat_completion_request(
+            return send_chat_completion_request(
                 messages, model, temperature, max_tokens, stream, websocket
             )
-            return response
         except RateLimitError:
             logging.warning("Rate limit reached, backing off...")
             time.sleep(2 ** (attempt + 2))  # exponential backoff
@@ -65,22 +64,21 @@ def create_chat_completion(
 def send_chat_completion_request(
     messages, model, temperature, max_tokens, stream, websocket
 ):
-    if not stream:
-        result = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        return result.choices[0].message["content"]
-    else:
+    if stream:
         return stream_response(model, messages, temperature, max_tokens, websocket)
+    result = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+    return result.choices[0].message["content"]
 
 
 async def stream_response(model, messages, temperature, max_tokens, websocket):
     paragraph = ""
     response = ""
-    print(f"streaming response...")
+    print("streaming response...")
 
     for chunk in openai.ChatCompletion.create(
             model=model,
@@ -96,5 +94,5 @@ async def stream_response(model, messages, temperature, max_tokens, websocket):
             if "\n" in paragraph:
                 await websocket.send_json({"type": "report", "output": paragraph})
                 paragraph = ""
-    print(f"streaming response complete")
+    print("streaming response complete")
     return response
